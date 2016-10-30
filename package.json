@@ -1,6 +1,6 @@
 {
   "name": "soso-client",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Soso client (websocket protocol)",
   "main": "dist/soso-client.js",
   "scripts": {
