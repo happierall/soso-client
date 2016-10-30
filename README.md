@@ -9,7 +9,7 @@
 
   // or use in browser with rawgit
 
-  https://cdn.rawgit.com/happierall/soso-client/master/dist/soso-client.min.js
+  <script src="https://cdn.rawgit.com/happierall/soso-client/master/dist/soso-client.min.js"></script>
 ```
 
 ###Usage
