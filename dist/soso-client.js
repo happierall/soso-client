@@ -1,5 +1,5 @@
 /**
- * SoSo v1.0.4
+ * SoSo v3.0.0
  * (c) 2016 Ruslan Ianberdin
  * @license MIT
  */
@@ -216,12 +216,12 @@ var ReconnectingWebsocket = function (url, protocols, options) {
 };
 var index = ReconnectingWebsocket;
 
-function SoSo(url) {
+function SoSo( url ) {
   var this$1 = this;
 
   this.url = url
   this.log = true
-  this.sock = new index(url)
+  this.sock = new index( url )
   this.onmessage = null
   this.onopen = null
   this.ondirectmsg = null
@@ -230,127 +230,136 @@ function SoSo(url) {
   this.callbacks = {}
   this.routes = []
 
-  this.sock.onmessage = function (e) {
-    var resp = JSON.parse(e.data)
-    if (this$1.onmessage) {
-      this$1.onmessage(resp)
+  this.sock.onmessage = function ( e ) {
+    var resp = JSON.parse( e.data )
+    if ( this$1.onmessage ) {
+      this$1.onmessage( resp )
     }
 
-    if (resp.trans_map.trans_id) {
-      this$1.callbacks[resp.trans_map.trans_id](resp)
-      delete this$1.callbacks[resp.trans_map.trans_id]
+    if ( resp.other.trans_id ) {
+      this$1.callbacks[ resp.other.trans_id ]( resp )
+      delete this$1.callbacks[ resp.other.trans_id ]
     } else {
 
-      if (this$1.ondirectmsg) {
-        this$1.ondirectmsg(resp)
+      if ( this$1.ondirectmsg ) {
+        this$1.ondirectmsg( resp )
       }
 
-      for (var i = 0; i < this$1.routes.length; i++) {
-        var route = this$1.routes[i]
-        if (resp.data_type === route.data_type && resp.action_str == route.action_str) {
-          route.func(resp)
+      for ( var i = 0; i < this$1.routes.length; i++ ) {
+        var route = this$1.routes[ i ]
+        if ( resp.model === route.mode && resp.action == route.action ) {
+          route.func( resp )
         }
       }
 
     }
 
-    if (this$1.log) {
+    if ( this$1.log ) {
 
       var time = ""
-      if (resp.trans_map.sent_at) {
-        time = (new Date().getTime() - resp.trans_map.sent_at) + "ms"
+      if ( resp.other.sent_at ) {
+        time = ( new Date().getTime() - resp.other.sent_at ) + "ms"
       }
 
-      var size = getUTF8Size(e.data) / 1024 // Kilobytes
+      var size = getUTF8Size( e.data ) / 1024 // Kilobytes
 
-      console.log('[CHAN] <- ' +
-        resp.data_type,
-        resp.action_str,
-        resp.log_map.code_str,
-        resp.log_map.user_msg,
-        resp.log_map.level_str,
-        time, +size.toFixed(3) + "kb")
+      console.log( '[CHAN] <- ' +
+        resp.model,
+        resp.action,
+        resp.log.code_str,
+        resp.log.user_msg,
+        resp.log.level_str,
+        time, +size.toFixed( 3 ) + "kb" )
 
     }
   }
   this.sock.onopen = function (e) {
-    if (this$1.onopen) {
-      this$1.onopen(e)
+    if ( this$1.onopen ) {
+      this$1.onopen( e )
     }
   }
   this.sock.onclose = function (e) {
-    if (this$1.onclose) {
-      this$1.onclose(e)
+    if ( this$1.onclose ) {
+      this$1.onclose( e )
     }
   }
   this.sock.onerror = function (e) {
-    if (this$1.onerror) {
-      this$1.onerror(e)
+    if ( this$1.onerror ) {
+      this$1.onerror( e )
     }
   }
 
 }
 
-SoSo.prototype.handle = function(data_type, action_str, func) {
+SoSo.prototype.handle = function ( model, action, func ) {
 
-  this.routes.push({
-    data_type: data_type, action_str: action_str, func: func
-  })
+  this.routes.push( {
+    model: model,
+    action: action,
+    func: func
+  } )
 
 }
 
-SoSo.prototype.request = function(data_type, action_str, request_map,
-  trans_map, log_map) {
+SoSo.prototype.request = function ( model, action, data,
+  other, log ) {
   var this$1 = this;
-  if ( request_map === void 0 ) request_map = {};
-  if ( trans_map === void 0 ) trans_map = {};
-  if ( log_map === void 0 ) log_map = {};
+  if ( data === void 0 ) data = {};
+  if ( other === void 0 ) other = {};
+  if ( log === void 0 ) log = {};
 
-  return new Promise(function (resolve) {
+  return new Promise( function (resolve) {
 
-    trans_map.sent_at = new Date().getTime()
-    trans_map.trans_id = uuid()
-    this$1.callbacks[trans_map.trans_id] = resolve
+    other.sent_at = new Date().getTime()
+    other.trans_id = uuid()
+    this$1.callbacks[ other.trans_id ] = resolve
 
-    var str_data = JSON.stringify({
-      data_type: data_type, action_str: action_str, log_map: log_map, request_map: request_map, trans_map: trans_map
-    })
+    var str_data = JSON.stringify( {
+      model: model,
+      action: action,
+      log: log,
+      request: request,
+      other: other
+    } )
 
-    this$1.sock.send(str_data)
+    this$1.sock.send( str_data )
 
-    if (this$1.log) {
+    if ( this$1.log ) {
 
-      var size = getUTF8Size(str_data) / 1024 // Kilobytes
+      var size = getUTF8Size( str_data ) / 1024 // Kilobytes
 
-      console.log('[CHAN] ?-> ' +
-        data_type,
-        action_str, +size.toFixed(3) + "kb")
+      console.log( '[CHAN] ?-> ' +
+        model, action, +size.toFixed( 3 ) + "kb" )
 
     }
 
-  })
+  } )
 }
 
-SoSo.prototype.send = function(data_type, action_str, request_map,
-  trans_map, log_map) {
-  if ( request_map === void 0 ) request_map = {};
-  if ( trans_map === void 0 ) trans_map = {};
-  if ( log_map === void 0 ) log_map = {};
+SoSo.prototype.send = function ( mode, action, data,
+  other, log ) {
+  if ( data === void 0 ) data = {};
+  if ( other === void 0 ) other = {};
+  if ( log === void 0 ) log = {};
 
 
-  var str_data = JSON.stringify({
-    data_type: data_type, action_str: action_str, log_map: log_map, request_map: request_map, trans_map: trans_map
-  })
+  var str_data = JSON.stringify( {
+    model: model,
+    action: action,
+    data: data,
+    log: log,
+    other: other
+  } )
 
-  this.sock.send(str_data)
+  this.sock.send( str_data )
 
-  if (this.log) {
+  if ( this.log ) {
 
-    var size = getUTF8Size(str_data) / 1024 // Kilobytes
+    var size = getUTF8Size( str_data ) / 1024 // Kilobytes
 
-    console.log('[CHAN] -> ' +
-      data_type,
-      action_str, +size.toFixed(3) + "kb")
+    console.log( '[CHAN] -> ' +
+      model,
+      action, +size.toFixed( 3 ) + "kb" )
 
   }
 
@@ -358,8 +367,8 @@ SoSo.prototype.send = function(data_type, action_str, request_map,
 
 // utils
 var lut = []
-for (var i = 0; i < 256; i++) {
-  lut[i] = (i < 16 ? '0' : '') + (i).toString(16)
+for ( var i = 0; i < 256; i++ ) {
+  lut[ i ] = ( i < 16 ? '0' : '' ) + ( i ).toString( 16 )
 }
 
 function uuid() {
@@ -367,27 +376,27 @@ function uuid() {
   var d1 = Math.random() * 0xffffffff | 0
   var d2 = Math.random() * 0xffffffff | 0
   var d3 = Math.random() * 0xffffffff | 0
-  return lut[d0 & 0xff] + lut[d0 >> 8 & 0xff] + lut[d0 >> 16 & 0xff] + lut[d0 >>
-      24 & 0xff] + '-' +
-    lut[d1 & 0xff] + lut[d1 >> 8 & 0xff] + '-' + lut[d1 >> 16 & 0x0f | 0x40] +
-    lut[d1 >> 24 & 0xff] + '-' +
-    lut[d2 & 0x3f | 0x80] + lut[d2 >> 8 & 0xff] + '-' + lut[d2 >> 16 & 0xff] +
-    lut[d2 >> 24 & 0xff] +
-    lut[d3 & 0xff] + lut[d3 >> 8 & 0xff] + lut[d3 >> 16 & 0xff] + lut[d3 >> 24 &
-      0xff];
+  return lut[ d0 & 0xff ] + lut[ d0 >> 8 & 0xff ] + lut[ d0 >> 16 & 0xff ] + lut[ d0 >>
+      24 & 0xff ] + '-' +
+    lut[ d1 & 0xff ] + lut[ d1 >> 8 & 0xff ] + '-' + lut[ d1 >> 16 & 0x0f | 0x40 ] +
+    lut[ d1 >> 24 & 0xff ] + '-' +
+    lut[ d2 & 0x3f | 0x80 ] + lut[ d2 >> 8 & 0xff ] + '-' + lut[ d2 >> 16 & 0xff ] +
+    lut[ d2 >> 24 & 0xff ] +
+    lut[ d3 & 0xff ] + lut[ d3 >> 8 & 0xff ] + lut[ d3 >> 16 & 0xff ] + lut[ d3 >> 24 &
+      0xff ];
 }
 
-function getUTF8Size(str) {
-  return str.split('')
-    .map(function(ch) {
-      return ch.charCodeAt(0)
-    }).map(function(uchar) {
+function getUTF8Size( str ) {
+  return str.split( '' )
+    .map( function ( ch ) {
+      return ch.charCodeAt( 0 )
+    } ).map( function ( uchar ) {
       // The reason for this is explained later in
       // the section “An Aside on Text Encodings”
       return uchar < 128 ? 1 : 2
-    }).reduce(function(curr, next) {
+    } ).reduce( function ( curr, next ) {
       return curr + next
-    })
+    } )
 }
 
 return SoSo;
