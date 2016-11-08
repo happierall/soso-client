@@ -94,8 +94,8 @@ SoSo.prototype.request = function ( model, action, data = {},
     let str_data = JSON.stringify( {
       model,
       action,
+      data,
       log,
-      request,
       other
     } )
 

@@ -1,5 +1,5 @@
 /**
- * SoSo v3.0.0
+ * SoSo v3.0.2
  * (c) 2016 Ruslan Ianberdin
  * @license MIT
  */
@@ -317,8 +317,8 @@ SoSo.prototype.request = function ( model, action, data,
     var str_data = JSON.stringify( {
       model: model,
       action: action,
+      data: data,
       log: log,
-      request: request,
       other: other
     } )
 
