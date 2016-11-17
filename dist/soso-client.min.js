@@ -1,5 +1,5 @@
 /**
- * SoSo v3.0.2
+ * SoSo v3.0.3
  * (c) 2016 Ruslan Ianberdin
  * @license MIT
  */

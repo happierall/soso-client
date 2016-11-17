@@ -1,6 +1,6 @@
 import ReconnectingWebsocket from 'reconnecting-websocket'
 
-export default function SoSo( url ) {
+function SoSo( url ) {
   this.url = url
   this.log = true
   this.sock = new ReconnectingWebsocket( url )
@@ -171,3 +171,5 @@ function getUTF8Size( str ) {
       return curr + next
     } )
 }
+
+export default SoSo
