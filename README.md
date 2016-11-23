@@ -50,3 +50,14 @@
   // Disabled logs
   soso.log = false // Default true
 ```
+
+```Javascript
+  // Short requests
+  soso.get("user")
+  soso.search("user")
+  soso.create("user")
+  soso.update("user")
+  soso.delete("user")
+  soso.flush("user")
+
+```
