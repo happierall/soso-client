@@ -3,11 +3,13 @@ export default class SoSo {
 
     this.url = url
     this.log = true
+    this.logData = true
     this.onmessage = null
     this.onopen = null
     this.ondirectmsg = null
     this.onclose = null
     this.onerror = null
+    this.middleware = new Middleware(this)
 
     this.sock = null
     this.callbacks = {}
@@ -24,10 +26,13 @@ export default class SoSo {
   }
 
   init() {
-    this.sock = new WebSocket(this.url)      
+    this.sock = new WebSocket(this.url)
 
     this.sock.onmessage = (e) => {
       var resp = JSON.parse(e.data)
+
+      this.middleware.beforeReceiveExecute(resp)
+
       if (this.onmessage) {
         this.onmessage(resp)
       }
@@ -63,7 +68,7 @@ export default class SoSo {
           resp.log.code_str,
           resp.log.user_msg,
           resp.log.level_str,
-          time)
+          time, this.logData ? resp : '')
 
       }
     }
@@ -85,7 +90,7 @@ export default class SoSo {
       this.connected = false
 
       setTimeout( () => {
-        
+
         if (this.log) {
           console.log("[SOSO] trying recconecting")
         }
@@ -124,7 +129,7 @@ export default class SoSo {
   create( model, data, other, log) {
     return this.request(model, 'create', data, other, log)
   }
-  
+
   update( model, data, other, log) {
     return this.request(model, 'update', data, other, log)
   }
@@ -136,7 +141,7 @@ export default class SoSo {
   flush( model, data, other, log) {
     return this.request(model, 'flush', data, other, log)
   }
-  
+
   request( model, action, data = {}, other = {}, log = {} ) {
     return new Promise(resolve => {
 
@@ -158,10 +163,13 @@ export default class SoSo {
   _send( data ) {
 
     if ( this.connected ) {
+
+      this.middleware.beforeSendExecute( data )
+
       this.sock.send( JSON.stringify( data ) )
 
       if (this.log) {
-        console.log('[CHAN] --> ', data.model, data.action)
+        console.log('[CHAN] -->', data.model, data.action, this.logData ? data : '')
       }
 
     } else {
@@ -176,7 +184,9 @@ export default class SoSo {
         }
 
       } ) ) {
+
         this.cache.requests.push(data)
+
       }
 
     }
@@ -215,4 +225,49 @@ function uuid() {
     lut[d2 >> 24 & 0xff] +
     lut[d3 & 0xff] + lut[d3 >> 8 & 0xff] + lut[d3 >> 16 & 0xff] + lut[d3 >> 24 &
       0xff];
+}
+
+class Middleware {
+  constructor( client ) {
+    this.client = client
+    this.beforeSendList = [
+      /*
+      {
+        func(resp)
+       }
+      */
+    ]
+    this.beforeReceiveList = [
+      /*
+      {
+        func(resp)
+       }
+      */
+    ]
+  }
+
+  beforeSend( callback ) {
+    this.beforeSendList.push( callback )
+  }
+
+  beforeReceive( callback ) {
+    this.beforeReceiveList.push( callback )
+  }
+
+  beforeSendExecute( data ) {
+    this.beforeSendList.forEach( ( handler ) => {
+
+      handler( data )
+
+    })
+  }
+
+  beforeReceiveExecute( resp ) {
+    this.beforeReceiveList.forEach( ( handler ) => {
+
+      handler( resp )
+
+    })
+  }
+
 }

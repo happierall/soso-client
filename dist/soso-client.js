@@ -1,5 +1,5 @@
 /**
- * SoSo v3.1.0
+ * SoSo v3.2.0
  * (c) 2016 Ruslan Ianberdin
  * @license MIT
  */
@@ -13,11 +13,13 @@ var SoSo = function SoSo( url, disableAutoInit ) {
 
   this.url = url
   this.log = true
+  this.logData = true
   this.onmessage = null
   this.onopen = null
   this.ondirectmsg = null
   this.onclose = null
   this.onerror = null
+  this.middleware = new Middleware(this)
 
   this.sock = null
   this.callbacks = {}
@@ -36,10 +38,13 @@ var SoSo = function SoSo( url, disableAutoInit ) {
 SoSo.prototype.init = function init () {
     var this$1 = this;
 
-  this.sock = new WebSocket(this.url)      
+  this.sock = new WebSocket(this.url)
 
   this.sock.onmessage = function (e) {
     var resp = JSON.parse(e.data)
+
+    this$1.middleware.beforeReceiveExecute(resp)
+
     if (this$1.onmessage) {
       this$1.onmessage(resp)
     }
@@ -75,7 +80,7 @@ SoSo.prototype.init = function init () {
         resp.log.code_str,
         resp.log.user_msg,
         resp.log.level_str,
-        time)
+        time, this$1.logData ? resp : '')
 
     }
   }
@@ -97,7 +102,7 @@ SoSo.prototype.init = function init () {
     this$1.connected = false
 
     setTimeout( function () {
-        
+
       if (this$1.log) {
         console.log("[SOSO] trying recconecting")
       }
@@ -136,7 +141,7 @@ SoSo.prototype.search = function search ( model, data, other, log) {
 SoSo.prototype.create = function create ( model, data, other, log) {
   return this.request(model, 'create', data, other, log)
 };
-  
+
 SoSo.prototype.update = function update ( model, data, other, log) {
   return this.request(model, 'update', data, other, log)
 };
@@ -148,7 +153,7 @@ SoSo.prototype.delete = function delete$1 ( model, data, other, log) {
 SoSo.prototype.flush = function flush ( model, data, other, log) {
   return this.request(model, 'flush', data, other, log)
 };
-  
+
 SoSo.prototype.request = function request ( model, action, data, other, log ) {
     var this$1 = this;
     if ( data === void 0 ) data = {};
@@ -179,10 +184,13 @@ SoSo.prototype.send = function send ( model, action, data, other, log ) {
 SoSo.prototype._send = function _send ( data ) {
 
   if ( this.connected ) {
+
+    this.middleware.beforeSendExecute( data )
+
     this.sock.send( JSON.stringify( data ) )
 
     if (this.log) {
-      console.log('[CHAN] --> ', data.model, data.action)
+      console.log('[CHAN] -->', data.model, data.action, this.logData ? data : '')
     }
 
   } else {
@@ -197,7 +205,9 @@ SoSo.prototype._send = function _send ( data ) {
       }
 
     } ) ) {
+
       this.cache.requests.push(data)
+
     }
 
   }
@@ -236,6 +246,48 @@ function uuid() {
     lut[d3 & 0xff] + lut[d3 >> 8 & 0xff] + lut[d3 >> 16 & 0xff] + lut[d3 >> 24 &
       0xff];
 }
+
+var Middleware = function Middleware( client ) {
+  this.client = client
+  this.beforeSendList = [
+    /*
+    {
+      func(resp)
+     }
+    */
+  ]
+  this.beforeReceiveList = [
+    /*
+    {
+      func(resp)
+     }
+    */
+  ]
+};
+
+Middleware.prototype.beforeSend = function beforeSend ( callback ) {
+  this.beforeSendList.push( callback )
+};
+
+Middleware.prototype.beforeReceive = function beforeReceive ( callback ) {
+  this.beforeReceiveList.push( callback )
+};
+
+Middleware.prototype.beforeSendExecute = function beforeSendExecute ( data ) {
+  this.beforeSendList.forEach( function ( handler ) {
+
+    handler( data )
+
+  })
+};
+
+Middleware.prototype.beforeReceiveExecute = function beforeReceiveExecute ( resp ) {
+  this.beforeReceiveList.forEach( function ( handler ) {
+
+    handler( resp )
+
+  })
+};
 
 return SoSo;
 
