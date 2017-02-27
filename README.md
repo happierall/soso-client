@@ -21,8 +21,8 @@
   // Request
   soso.onopen = () => {
 
-    soso.request("user", "retrieve", { id: 1 }).then(data => {
-      console.log(data.response_map)
+    soso.request("user", "retrieve", { id: 1 }).then( resp => {
+      console.log(resp.data)
     })
 
   }
