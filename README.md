@@ -1,4 +1,4 @@
-# Soso client
+# Soso client (Warning! Not maintained)
 ## Comfortable, fast, bidirectional protocol over websocket instead REST
 
 [soso-server](https://github.com/happierall/soso-server)
